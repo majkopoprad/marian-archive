@@ -343,7 +343,17 @@ img {
   margin-top: 5rem;
   text-align: center;
   font-size: 0.8rem;
-  color: var(--ink-faint);
+}
+
+/* Back to the portfolio — quiet grey, black on hover, like its nav. */
+.colophon a {
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.colophon a:hover {
+  color: var(--ink-strong);
 }
 
 /* ---- Mobile ------------------------------------------------------------------
