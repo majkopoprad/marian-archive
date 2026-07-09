@@ -307,6 +307,12 @@
       .then(function (body) {
         // Show the new entry immediately. The committed version
         // becomes permanent once Netlify finishes redeploying.
+        // Until that redeploy, the image's /images/… URL does not
+        // exist on the live site yet — so display the local copy
+        // (base64) for now. The real URL takes over on next load.
+        if (attachedImage) {
+          body.entry.image = attachedImage.data;
+        }
         entries.unshift(body.entry);
         render();
         clearComposer();
