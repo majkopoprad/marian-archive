@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Marian Kalavsky archive — a public digital archive. Public page. Private mind." />
+  <title>Marian Kalavsky archive</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER =====
+       The masthead of the archive. Quiet, literary, centered. -->
+  <header class="masthead">
+    <h1 class="masthead__title">Marian Kalavsky archive</h1>
+    <p class="masthead__subtitle">
+      Public page.<br />
+      Private mind.
+    </p>
+  </header>
+
+  <!-- ===== FILTERS =====
+       Three pills. JavaScript switches the active filter and re-renders. -->
+  <nav class="filters" aria-label="Filter entries">
+    <button class="pill is-active" data-filter="all">All</button>
+    <button class="pill" data-filter="text">Text</button>
+    <button class="pill" data-filter="images">Images</button>
+  </nav>
+
+  <!-- ===== COMPOSER =====
+       The posting interface. Hidden on mobile via CSS.
+       This form holds NO secrets — the password typed here is only
+       sent to the backend, which verifies it against an environment
+       variable. Anyone can see this form; nobody can use it without
+       the password known only to the server. -->
+  <section class="composer" aria-label="New entry">
+    <textarea
+      id="composer-text"
+      class="composer__text"
+      rows="4"
+      placeholder="Write something…"
+      spellcheck="false"></textarea>
+
+    <div class="composer__row">
+      <!-- Image picker. The chosen file is read as base64 and sent
+           to the backend, which commits it into /images/. -->
+      <label class="composer__file">
+        <input type="file" id="composer-image" accept="image/*" />
+        <span id="composer-image-label">Attach image</span>
+      </label>
+
+      <input
+        type="password"
+        id="composer-password"
+        class="composer__password"
+        placeholder="Password"
+        autocomplete="current-password" />
+
+      <button id="composer-clear" class="btn btn--ghost" type="button">Clear</button>
+      <button id="composer-save" class="btn" type="button">Save</button>
+    </div>
+
+    <!-- Small preview of the attached image before publishing. -->
+    <img id="composer-preview" class="composer__preview" alt="" hidden />
+
+    <!-- Status line: "Publishing…", "Saved.", error messages. -->
+    <p id="composer-status" class="composer__status" role="status"></p>
+  </section>
+
+  <!-- ===== ARCHIVE =====
+       Entries are rendered here by script.js.
+       In "Images" mode this container becomes a gallery grid. -->
+  <main id="archive" class="archive" aria-live="polite"></main>
+
+  <!-- Shown while loading or when the archive is empty. -->
+  <p id="archive-empty" class="archive__empty" hidden>Nothing here yet.</p>
+
+  <!-- ===== LIGHTBOX =====
+       Click any image to view it large. Click anywhere to close. -->
+  <div id="lightbox" class="lightbox" hidden>
+    <img id="lightbox-image" alt="" />
+  </div>
+
+  <footer class="colophon">
+    <p>An archive of one person. Everything here is public.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

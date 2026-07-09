@@ -1,0 +1,372 @@
+/* ==========================================================================
+   Marian Kalavsky archive — stylesheet
+
+   Design intent:
+   - dark, quiet, literary
+   - large whitespace, thin rules, no ornament
+   - a museum label, not a dashboard
+   ========================================================================== */
+
+/* ---- Palette & type ----------------------------------------------------- */
+
+:root {
+  --ink: #d6d2c8;          /* warm off-white body text            */
+  --ink-dim: #8a867d;      /* dates, captions, secondary text     */
+  --ink-faint: #55524b;    /* hairlines, placeholders             */
+  --paper: #111113;        /* page background — near black        */
+  --paper-raised: #17171a; /* composer, cards                     */
+  --rule: #26262a;         /* horizontal rules between entries    */
+  --accent: #c8b98a;       /* a single, restrained brass accent   */
+
+  /* System serif stack: literary without loading webfonts,
+     which keeps the site fast and dependency-free for decades. */
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+           Georgia, "Times New Roman", serif;
+}
+
+/* ---- Reset (minimal) ---------------------------------------------------- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  font-family: var(--serif);
+  color: var(--ink);
+  line-height: 1.7;
+  font-size: 1.0625rem; /* 17px — comfortable for long reading */
+  max-width: 42rem;     /* a book column, not a screen-wide app */
+  margin: 0 auto;
+  padding: 6rem 1.5rem 8rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ---- Masthead ----------------------------------------------------------- */
+
+.masthead {
+  text-align: center;
+  margin-bottom: 4.5rem;
+}
+
+.masthead__title {
+  font-weight: 400;
+  font-size: 1.75rem;
+  letter-spacing: 0.04em;
+}
+
+.masthead__subtitle {
+  margin-top: 1.25rem;
+  color: var(--ink-dim);
+  font-style: italic;
+  font-size: 1rem;
+}
+
+/* ---- Filter pills -------------------------------------------------------- */
+
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 4rem;
+}
+
+.pill {
+  font-family: var(--serif);
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.35rem 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.pill:hover {
+  color: var(--ink);
+}
+
+.pill.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---- Composer (posting interface) ---------------------------------------
+   Hidden on mobile — see the media query at the bottom.
+   Hiding it is a layout choice, NOT a security measure:
+   the backend rejects every request without the correct password. */
+
+.composer {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.25rem;
+  margin-bottom: 4.5rem;
+}
+
+.composer__text {
+  width: 100%;
+  background: none;
+  border: none;
+  resize: vertical;
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ink);
+  outline: none;
+}
+
+.composer__text::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.composer__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+
+/* The native file input is visually replaced by its label text. */
+.composer__file input[type="file"] {
+  display: none;
+}
+
+.composer__file span {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint);
+}
+
+.composer__file span:hover {
+  color: var(--ink);
+}
+
+.composer__password {
+  margin-left: auto;
+  width: 9rem;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.composer__password:focus {
+  border-color: var(--ink-dim);
+}
+
+.btn {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--paper);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.3rem 1rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  filter: brightness(1.1);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn--ghost {
+  color: var(--ink-dim);
+  background: none;
+  border-color: var(--rule);
+}
+
+.btn--ghost:hover {
+  color: var(--ink);
+  filter: none;
+}
+
+.composer__preview {
+  margin-top: 1rem;
+  max-height: 12rem;
+  border-radius: 3px;
+}
+
+.composer__status {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-dim);
+  min-height: 1.2em;
+}
+
+.composer__status.is-error {
+  color: #b0684f;
+}
+
+/* ---- Archive entries ----------------------------------------------------- */
+
+.archive {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry {
+  padding: 3rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry:first-child {
+  padding-top: 0;
+}
+
+/* Date, small and quiet, like a museum label. */
+.entry__date {
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 1.1rem;
+}
+
+.entry__text {
+  white-space: pre-wrap;   /* preserve the author's line breaks */
+  overflow-wrap: break-word;
+}
+
+.entry__image {
+  margin-top: 1.5rem;
+  border-radius: 3px;
+  cursor: zoom-in;
+}
+
+.entry__text + .entry__image {
+  margin-top: 1.5rem;
+}
+
+/* Delete is present but nearly invisible — it only works
+   with the password, verified by the backend. */
+.entry__delete {
+  display: block;
+  margin-top: 1.25rem;
+  font-family: var(--serif);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.entry__delete:hover {
+  color: #b0684f;
+}
+
+.archive__empty {
+  text-align: center;
+  color: var(--ink-dim);
+  font-style: italic;
+  padding: 3rem 0;
+}
+
+/* ---- Gallery mode (Images filter) ----------------------------------------
+   When the "Images" pill is active, script.js adds .archive--gallery
+   and renders only entries that carry an image. */
+
+.archive--gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.archive--gallery .entry {
+  padding: 0;
+  border: none;
+}
+
+.archive--gallery .entry__date,
+.archive--gallery .entry__text,
+.archive--gallery .entry__delete {
+  display: none;
+}
+
+.archive--gallery .entry__image {
+  margin: 0;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* ---- Lightbox ------------------------------------------------------------ */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  cursor: zoom-out;
+  z-index: 10;
+}
+
+/* The hidden attribute must beat the display:flex above. */
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* ---- Colophon ------------------------------------------------------------ */
+
+.colophon {
+  margin-top: 6rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* ---- Mobile ---------------------------------------------------------------
+   Visitors on phones simply browse. The composer disappears.
+   (The backend still guards publishing — this is purely layout.) */
+
+@media (max-width: 640px) {
+  body {
+    padding: 3.5rem 1.25rem 5rem;
+  }
+
+  .composer {
+    display: none;
+  }
+
+  .entry__delete {
+    display: none;
+  }
+}

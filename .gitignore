@@ -1,0 +1,7 @@
+# Local secrets for netlify dev — never commit these.
+.env
+
+# Editor / tooling
+.claude/
+node_modules/
+.netlify/
