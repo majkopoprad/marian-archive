@@ -35,14 +35,16 @@
   var POST_URL = "/.netlify/functions/post";
   var DELETE_URL = "/.netlify/functions/delete";
 
-  // Resolve an entry's image to a URL the browser can load.
-  // Repo paths ("/images/…") are served from GitHub; data URLs
-  // (fresh optimistic posts) pass through untouched.
-  function imageUrl(image) {
-    if (!image) return null;
-    if (image.indexOf("data:") === 0) return image;
-    if (image.indexOf("/images/") === 0) return RAW_BASE + image;
-    return image;
+  // Resolve an entry's media (image or audio) to a URL the browser
+  // can load. Repo paths ("/images/…", "/audio/…") are served from
+  // GitHub; data URLs (fresh optimistic posts) pass through untouched.
+  function mediaUrl(path) {
+    if (!path) return null;
+    if (path.indexOf("data:") === 0) return path;
+    if (path.indexOf("/images/") === 0 || path.indexOf("/audio/") === 0) {
+      return RAW_BASE + path;
+    }
+    return path;
   }
 
   /* ---- State ------------------------------------------------------------ */
@@ -50,6 +52,8 @@
   var entries = [];        // all entries, newest first
   var activeFilter = "all"; // "all" | "text" | "images"
   var attachedImage = null; // { name, data } — base64 payload for upload
+  var attachedAudio = null; // { name, data } — same, for audio
+  var playingAudio = null;  // the <audio> currently playing, if any
 
   /* ---- Elements ---------------------------------------------------------- */
 
@@ -60,6 +64,8 @@
   var textEl = document.getElementById("composer-text");
   var imageEl = document.getElementById("composer-image");
   var imageLabelEl = document.getElementById("composer-image-label");
+  var audioEl = document.getElementById("composer-audio");
+  var audioLabelEl = document.getElementById("composer-audio-label");
   var passwordEl = document.getElementById("composer-password");
   var saveBtn = document.getElementById("composer-save");
   var clearBtn = document.getElementById("composer-clear");
@@ -123,10 +129,10 @@
 
   function visibleEntries() {
     if (activeFilter === "text") {
-      // Text means text only — entries carrying an image belong
-      // to the Images gallery, not here.
+      // Text means text only — entries carrying an image or audio
+      // belong to their media, not here.
       return entries.filter(function (e) {
-        return e.text && e.text.trim() && !e.image;
+        return e.text && e.text.trim() && !e.image && !e.audio;
       });
     }
     if (activeFilter === "images") {
@@ -169,7 +175,7 @@
     }
 
     if (entry.image) {
-      var src = imageUrl(entry.image);
+      var src = mediaUrl(entry.image);
       var img = document.createElement("img");
       img.className = "entry__image";
       img.src = src;
@@ -179,6 +185,10 @@
         openLightbox(src);
       });
       article.appendChild(img);
+    }
+
+    if (entry.audio) {
+      article.appendChild(renderPlayer(mediaUrl(entry.audio)));
     }
 
     var del = document.createElement("button");
@@ -191,6 +201,90 @@
     article.appendChild(del);
 
     return article;
+  }
+
+  // A quiet audio player in the site's own style: the word
+  // "play" / "pause", a thin progress line, and the time.
+  // The native browser player would be far too loud here.
+  function renderPlayer(src) {
+    var wrap = document.createElement("div");
+    wrap.className = "entry__player";
+
+    var audio = document.createElement("audio");
+    audio.preload = "metadata";
+    audio.src = src;
+
+    var btn = document.createElement("button");
+    btn.className = "entry__player-btn";
+    btn.type = "button";
+    btn.textContent = "play";
+
+    var track = document.createElement("div");
+    track.className = "entry__player-track";
+    var fill = document.createElement("div");
+    fill.className = "entry__player-fill";
+    track.appendChild(fill);
+
+    var time = document.createElement("span");
+    time.className = "entry__player-time";
+    time.textContent = "0:00";
+
+    function fmt(s) {
+      if (!isFinite(s)) return "0:00";
+      var m = Math.floor(s / 60);
+      var r = Math.floor(s % 60);
+      return m + ":" + (r < 10 ? "0" : "") + r;
+    }
+
+    btn.addEventListener("click", function () {
+      if (audio.paused) {
+        // Only one voice at a time in the archive.
+        if (playingAudio && playingAudio !== audio) playingAudio.pause();
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    });
+
+    audio.addEventListener("play", function () {
+      playingAudio = audio;
+      btn.textContent = "pause";
+    });
+
+    audio.addEventListener("pause", function () {
+      btn.textContent = "play";
+    });
+
+    audio.addEventListener("ended", function () {
+      btn.textContent = "play";
+      fill.style.width = "0%";
+      time.textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener("loadedmetadata", function () {
+      time.textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener("timeupdate", function () {
+      if (audio.duration) {
+        fill.style.width = (audio.currentTime / audio.duration) * 100 + "%";
+        time.textContent = fmt(audio.currentTime);
+      }
+    });
+
+    // Click the line to seek.
+    track.addEventListener("click", function (e) {
+      if (!audio.duration) return;
+      var rect = track.getBoundingClientRect();
+      audio.currentTime =
+        ((e.clientX - rect.left) / rect.width) * audio.duration;
+    });
+
+    wrap.appendChild(audio);
+    wrap.appendChild(btn);
+    wrap.appendChild(track);
+    wrap.appendChild(time);
+    return wrap;
   }
 
   /* ---- Filters ------------------------------------------------------------ */
@@ -216,6 +310,9 @@
     imageEl.value = "";
     attachedImage = null;
     imageLabelEl.textContent = "Attach image";
+    audioEl.value = "";
+    attachedAudio = null;
+    audioLabelEl.textContent = "Attach audio";
     previewEl.hidden = true;
     previewEl.src = "";
     setStatus("");
@@ -316,15 +413,47 @@
     });
   });
 
+  // Audio attachments. Unlike images, audio cannot be recompressed
+  // in the browser, so the platform's payload ceiling is a hard
+  // limit — an MP3 keeps ~3.5 minutes at 128 kbps under it.
+  audioEl.addEventListener("change", function () {
+    var file = audioEl.files[0];
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setStatus("Audio must be under 3.5 MB — export a smaller MP3.", true);
+      audioEl.value = "";
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      attachedAudio = { name: file.name, data: reader.result };
+      audioLabelEl.textContent = file.name;
+      setStatus("");
+    };
+    reader.readAsDataURL(file);
+  });
+
   clearBtn.addEventListener("click", clearComposer);
 
   saveBtn.addEventListener("click", function () {
     var text = textEl.value.trim();
     var password = passwordEl.value;
 
-    if (!text && !attachedImage) {
-      setStatus("Write something or attach an image first.", true);
+    if (!text && !attachedImage && !attachedAudio) {
+      setStatus("Write something or attach an image or audio first.", true);
       return;
+    }
+
+    // Both attachments must fit in one function request together.
+    if (attachedImage && attachedAudio) {
+      var combined =
+        dataUrlBytes(attachedImage.data) + dataUrlBytes(attachedAudio.data);
+      if (combined > MAX_IMAGE_BYTES) {
+        setStatus("Image and audio together are too large for one entry.", true);
+        return;
+      }
     }
     if (!password) {
       setStatus("Password required.", true);
@@ -341,6 +470,7 @@
         password: password,
         text: text,
         image: attachedImage, // null when no image is attached
+        audio: attachedAudio, // null when no audio is attached
       }),
     })
       .then(function (res) {
@@ -351,10 +481,13 @@
       })
       .then(function (body) {
         // Show the new entry immediately. Until GitHub's CDN picks
-        // up the freshly committed image (moments), display the
-        // local copy (base64); the real URL takes over on next load.
+        // up the freshly committed files (moments), display the
+        // local copies (base64); the real URLs take over on next load.
         if (attachedImage) {
           body.entry.image = attachedImage.data;
+        }
+        if (attachedAudio) {
+          body.entry.audio = attachedAudio.data;
         }
         entries.unshift(body.entry);
         render();

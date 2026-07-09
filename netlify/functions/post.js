@@ -64,13 +64,24 @@ function json(statusCode, payload) {
   };
 }
 
-// Only a few safe image types are accepted; the extension is derived
+// Only a few safe media types are accepted; the extension is derived
 // from the data URL's MIME type, never from the client's filename.
 const IMAGE_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/gif": "gif",
   "image/webp": "webp",
+};
+
+const AUDIO_TYPES = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/ogg": "ogg",
+  "audio/webm": "weba",
 };
 
 /* ---- Handler --------------------------------------------------------------- */
@@ -94,9 +105,10 @@ exports.handler = async function (event) {
 
   const text = typeof payload.text === "string" ? payload.text.trim() : "";
   const image = payload.image; // { name, data } or null
+  const audio = payload.audio; // { name, data } or null
 
-  if (!text && !image) {
-    return json(400, { error: "An entry needs text or an image." });
+  if (!text && !image && !audio) {
+    return json(400, { error: "An entry needs text, an image, or audio." });
   }
 
   const branch = process.env.GITHUB_BRANCH || "main";
@@ -126,6 +138,22 @@ exports.handler = async function (event) {
       imagePath = `/${filename}`;
     }
 
+    // 1b. Same for audio, committed into /audio/.
+    let audioPath = null;
+    if (audio && typeof audio.data === "string") {
+      const match = audio.data.match(/^data:(audio\/[\w+.-]+);base64,(.+)$/s);
+      if (!match || !AUDIO_TYPES[match[1]]) {
+        return json(400, { error: "Unsupported audio type." });
+      }
+      const filename = `audio/${id}.${AUDIO_TYPES[match[1]]}`;
+      await github("PUT", filename, {
+        message: `archive: add audio ${id}`,
+        content: match[2],
+        branch,
+      });
+      audioPath = `/${filename}`;
+    }
+
     // 2. Read the current thoughts.json (we need its blob sha to update it).
     const current = await github("GET", `thoughts.json?ref=${branch}`);
     const entries = current
@@ -138,6 +166,7 @@ exports.handler = async function (event) {
       date: now.toISOString(),
       text,
       image: imagePath,
+      audio: audioPath,
     };
     entries.unshift(entry);
 

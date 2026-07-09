@@ -99,21 +99,23 @@ exports.handler = async function (event) {
       branch,
     });
 
-    // 3. Delete the image file, if the entry had one. A failure here
-    //    is logged but not fatal — the entry itself is already gone.
-    if (entry.image) {
+    // 3. Delete the entry's media files (image and/or audio). A
+    //    failure here is logged but not fatal — the entry itself
+    //    is already gone.
+    for (const media of [entry.image, entry.audio]) {
+      if (!media) continue;
       try {
-        const imagePath = entry.image.replace(/^\//, "");
-        const file = await github("GET", `${imagePath}?ref=${branch}`);
+        const mediaPath = media.replace(/^\//, "");
+        const file = await github("GET", `${mediaPath}?ref=${branch}`);
         if (file) {
-          await github("DELETE", imagePath, {
-            message: `archive: delete image for ${id}`,
+          await github("DELETE", mediaPath, {
+            message: `archive: delete media for ${id}`,
             sha: file.sha,
             branch,
           });
         }
       } catch (err) {
-        console.error("Image cleanup failed:", err);
+        console.error("Media cleanup failed:", err);
       }
     }
 

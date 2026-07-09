@@ -8,7 +8,7 @@
   # (thoughts.json / images): the frontend reads those straight
   # from GitHub, so redeploying for them would waste build credits.
   # Exits 0 (skip) when nothing outside the data paths changed.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)thoughts.json' ':(exclude)images'"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)thoughts.json' ':(exclude)images' ':(exclude)audio'"
 
 # thoughts.json must never be served stale: the feed should update
 # as soon as a new deploy goes live.
@@ -17,9 +17,14 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-# Images are content-addressed by entry id and never change once
-# committed, so they may be cached forever.
+# Images and audio are content-addressed by entry id and never change
+# once committed, so they may be cached forever.
 [[headers]]
   for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/audio/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"

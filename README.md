@@ -114,6 +114,16 @@ entry's id, so images and entries can never get mixed up.
 You can also add images manually: commit a file into `images/` and
 reference it from an entry in `thoughts.json` as `"/images/name.jpg"`.
 
+## Audio
+
+Attach audio the same way — **Attach audio** in the composer. Supported:
+MP3, M4A, WAV, OGG, WebM, up to **3.5 MB** (audio cannot be recompressed
+in the browser, so this platform limit is hard; a 128 kbps MP3 fits
+about 3.5 minutes). Files are committed into `/audio/` and play inline
+in a minimal player (play / thin progress line / time). An entry can
+combine text, an image, and audio, as long as the attachments fit in
+one request together.
+
 ## 6. Delete a thought
 
 Type your password into the composer's password field, then press the

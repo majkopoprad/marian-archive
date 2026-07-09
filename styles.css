@@ -258,6 +258,61 @@ img {
   cursor: zoom-in;
 }
 
+/* Audio player — the word "play", a thin line, the time.
+   Quiet, like everything else here. */
+.entry__player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 1.25rem;
+}
+
+.entry__player audio {
+  display: none; /* the custom controls are the interface */
+}
+
+.entry__player-btn {
+  font-family: 'Receipt', serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s;
+  min-width: 3.2rem;
+  text-align: left;
+}
+
+.entry__player-btn:hover {
+  color: var(--ink-strong);
+}
+
+.entry__player-track {
+  flex: 1;
+  height: 2px;
+  background: var(--rule);
+  cursor: pointer;
+  /* a taller invisible hit area for easy clicking */
+  padding: 8px 0;
+  background-clip: content-box;
+}
+
+.entry__player-fill {
+  height: 2px;
+  width: 0%;
+  background: var(--ink);
+}
+
+.entry__player-time {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  min-width: 2.6rem;
+  text-align: right;
+}
+
 /* Delete is present but nearly invisible — it only works
    with the password, verified by the backend. */
 .entry__delete {
@@ -300,6 +355,7 @@ img {
 
 .archive--gallery .entry__date,
 .archive--gallery .entry__text,
+.archive--gallery .entry__player,
 .archive--gallery .entry__delete {
   display: none;
 }
