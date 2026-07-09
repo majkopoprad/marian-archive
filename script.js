@@ -123,7 +123,11 @@
 
   function visibleEntries() {
     if (activeFilter === "text") {
-      return entries.filter(function (e) { return e.text && e.text.trim(); });
+      // Text means text only — entries carrying an image belong
+      // to the Images gallery, not here.
+      return entries.filter(function (e) {
+        return e.text && e.text.trim() && !e.image;
+      });
     }
     if (activeFilter === "images") {
       return entries.filter(function (e) { return e.image; });
