@@ -265,7 +265,7 @@ img {
   margin-top: 1.25rem;
   font-family: 'Receipt', serif;
   font-size: 0.75rem;
-  color: var(--rule);
+  color: var(--ink-faint);
   background: none;
   border: none;
   cursor: pointer;

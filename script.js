@@ -21,7 +21,15 @@
   // not from the deployed site. This means a new post is visible
   // seconds after publishing — no Netlify redeploy needed — and the
   // site keeps showing fresh data even when deploys are paused.
+  //
+  // The API endpoint is tried first because it is never CDN-cached:
+  // raw.githubusercontent.com holds files for up to 5 minutes, which
+  // made fresh posts and deletes look like they hadn't happened.
+  // The API allows 60 requests/hour per visitor IP — far more than a
+  // reader needs — and everything falls back to raw, then to the
+  // copy bundled with the deployed site.
   var RAW_BASE = "https://raw.githubusercontent.com/majkopoprad/marian-archive/main";
+  var DATA_API_URL = "https://api.github.com/repos/majkopoprad/marian-archive/contents/thoughts.json";
   var DATA_URL = RAW_BASE + "/thoughts.json";
   var DATA_FALLBACK_URL = "/thoughts.json"; // deployed copy, if GitHub is unreachable
   var POST_URL = "/.netlify/functions/post";
@@ -63,14 +71,23 @@
 
   /* ---- Loading ----------------------------------------------------------- */
 
-  // A timestamp query defeats stale caches so a fresh commit
-  // is visible immediately. If GitHub is unreachable, fall back
-  // to the copy bundled with the deployed site.
+  // Freshest source first: the GitHub API is never CDN-cached, so
+  // posts and deletes are visible immediately. If it fails (rate
+  // limit, outage), fall back to raw (up to 5 min stale), and
+  // finally to the copy bundled with the deployed site.
   function loadEntries() {
-    fetch(DATA_URL + "?t=" + Date.now())
+    fetch(DATA_API_URL + "?t=" + Date.now(), {
+      headers: { Accept: "application/vnd.github.raw+json" },
+    })
       .then(function (res) {
-        if (!res.ok) throw new Error("raw fetch failed");
+        if (!res.ok) throw new Error("api fetch failed");
         return res.json();
+      })
+      .catch(function () {
+        return fetch(DATA_URL + "?t=" + Date.now()).then(function (res) {
+          if (!res.ok) throw new Error("raw fetch failed");
+          return res.json();
+        });
       })
       .catch(function () {
         return fetch(DATA_FALLBACK_URL + "?t=" + Date.now()).then(function (res) {
