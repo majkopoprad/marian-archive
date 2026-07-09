@@ -156,6 +156,33 @@
     });
   }
 
+  // Turn URLs inside plain text into clickable links. Built with
+  // DOM nodes only (never innerHTML), so the rest of the text can
+  // never be interpreted as markup — same safety as textContent.
+  function linkify(text, parent) {
+    var pattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    var last = 0;
+    var match;
+    while ((match = pattern.exec(text)) !== null) {
+      var url = match[0];
+      // Trailing punctuation belongs to the sentence, not the URL.
+      var trimmed = url.replace(/[.,;:!?)\]}'"»]+$/, "");
+      if (match.index > last) {
+        parent.appendChild(document.createTextNode(text.slice(last, match.index)));
+      }
+      var a = document.createElement("a");
+      a.href = trimmed.indexOf("http") === 0 ? trimmed : "https://" + trimmed;
+      a.textContent = trimmed;
+      a.target = "_blank";
+      a.rel = "noopener";
+      parent.appendChild(a);
+      last = match.index + trimmed.length;
+    }
+    if (last < text.length) {
+      parent.appendChild(document.createTextNode(text.slice(last)));
+    }
+  }
+
   // Entries are built with DOM methods, never innerHTML, so text
   // content can never be interpreted as markup (XSS-safe).
   function renderEntry(entry) {
@@ -170,7 +197,7 @@
     if (entry.text && entry.text.trim()) {
       var text = document.createElement("p");
       text.className = "entry__text";
-      text.textContent = entry.text;
+      linkify(entry.text, text);
       article.appendChild(text);
     }
 

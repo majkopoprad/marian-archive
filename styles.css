@@ -249,6 +249,19 @@ img {
   max-width: 600px;
 }
 
+/* Links inside entries: same ink, quietly underlined. */
+.entry__text a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ink-faint);
+  text-underline-offset: 3px;
+  transition: color 0.3s;
+}
+
+.entry__text a:hover {
+  color: var(--ink-strong);
+}
+
 .entry__image {
   margin-top: 1.25rem;
   max-width: 500px;
