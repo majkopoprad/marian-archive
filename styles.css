@@ -289,8 +289,8 @@ img {
 
 .archive--gallery {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px; /* tight, Instagram-style */
 }
 
 .archive--gallery .entry {
@@ -310,6 +310,7 @@ img {
   max-width: none;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  border-radius: 0; /* sharp tiles, like the IG grid */
 }
 
 /* ---- Lightbox --------------------------------------------------------------
