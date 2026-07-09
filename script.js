@@ -17,9 +17,25 @@
 
   /* ---- Configuration ---------------------------------------------------- */
 
-  var DATA_URL = "/thoughts.json";
+  // Entries and images are read straight from the GitHub repository,
+  // not from the deployed site. This means a new post is visible
+  // seconds after publishing — no Netlify redeploy needed — and the
+  // site keeps showing fresh data even when deploys are paused.
+  var RAW_BASE = "https://raw.githubusercontent.com/majkopoprad/marian-archive/main";
+  var DATA_URL = RAW_BASE + "/thoughts.json";
+  var DATA_FALLBACK_URL = "/thoughts.json"; // deployed copy, if GitHub is unreachable
   var POST_URL = "/.netlify/functions/post";
   var DELETE_URL = "/.netlify/functions/delete";
+
+  // Resolve an entry's image to a URL the browser can load.
+  // Repo paths ("/images/…") are served from GitHub; data URLs
+  // (fresh optimistic posts) pass through untouched.
+  function imageUrl(image) {
+    if (!image) return null;
+    if (image.indexOf("data:") === 0) return image;
+    if (image.indexOf("/images/") === 0) return RAW_BASE + image;
+    return image;
+  }
 
   /* ---- State ------------------------------------------------------------ */
 
@@ -47,13 +63,20 @@
 
   /* ---- Loading ----------------------------------------------------------- */
 
-  // A timestamp query defeats stale caches so a fresh deploy
-  // is visible immediately.
+  // A timestamp query defeats stale caches so a fresh commit
+  // is visible immediately. If GitHub is unreachable, fall back
+  // to the copy bundled with the deployed site.
   function loadEntries() {
     fetch(DATA_URL + "?t=" + Date.now())
       .then(function (res) {
-        if (!res.ok) throw new Error("Could not load the archive.");
+        if (!res.ok) throw new Error("raw fetch failed");
         return res.json();
+      })
+      .catch(function () {
+        return fetch(DATA_FALLBACK_URL + "?t=" + Date.now()).then(function (res) {
+          if (!res.ok) throw new Error("Could not load the archive.");
+          return res.json();
+        });
       })
       .then(function (data) {
         entries = Array.isArray(data) ? data : [];
@@ -125,13 +148,14 @@
     }
 
     if (entry.image) {
+      var src = imageUrl(entry.image);
       var img = document.createElement("img");
       img.className = "entry__image";
-      img.src = entry.image;
+      img.src = src;
       img.alt = "";
       img.loading = "lazy";
       img.addEventListener("click", function () {
-        openLightbox(entry.image);
+        openLightbox(src);
       });
       article.appendChild(img);
     }
@@ -305,18 +329,16 @@
         });
       })
       .then(function (body) {
-        // Show the new entry immediately. The committed version
-        // becomes permanent once Netlify finishes redeploying.
-        // Until that redeploy, the image's /images/… URL does not
-        // exist on the live site yet — so display the local copy
-        // (base64) for now. The real URL takes over on next load.
+        // Show the new entry immediately. Until GitHub's CDN picks
+        // up the freshly committed image (moments), display the
+        // local copy (base64); the real URL takes over on next load.
         if (attachedImage) {
           body.entry.image = attachedImage.data;
         }
         entries.unshift(body.entry);
         render();
         clearComposer();
-        setStatus("Saved. It becomes permanent when the site redeploys (about a minute).");
+        setStatus("Saved.");
       })
       .catch(function (err) {
         setStatus(err.message, true);
@@ -353,7 +375,7 @@
       .then(function () {
         entries = entries.filter(function (e) { return e.id !== entry.id; });
         render();
-        setStatus("Deleted. Permanent after the next redeploy.");
+        setStatus("Deleted.");
       })
       .catch(function (err) {
         button.disabled = false;

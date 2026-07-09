@@ -6,8 +6,12 @@ everything; only the owner can publish or delete.
 - Static frontend: plain HTML, CSS, vanilla JavaScript. No frameworks.
 - Tiny backend: two Netlify Functions (`post`, `delete`).
 - Storage: the site's own GitHub repository. Publishing commits
-  `thoughts.json` (and images) through the GitHub API; the commit
-  triggers a Netlify redeploy, so the live site is always static.
+  `thoughts.json` (and images) through the GitHub API. The frontend
+  reads entries and images straight from GitHub (raw.githubusercontent),
+  so new posts are visible seconds after publishing — no redeploy
+  needed, and data-only commits skip the Netlify build entirely
+  (see `ignore` in `netlify.toml`). Netlify only rebuilds when the
+  site's code itself changes.
 - Security: the password exists **only** as a Netlify environment
   variable and is verified server-side, in constant time. There is no
   password anywhere in the frontend code.
@@ -92,8 +96,9 @@ password lives nowhere else. No code changes, no commits.
 4. Press **Save**.
 
 The entry appears immediately in your view. Behind the scenes the
-function commits it to GitHub, Netlify redeploys (about a minute), and
-after that the entry is permanent and public for everyone.
+function commits it to GitHub, and since the site reads its data
+straight from GitHub, the entry is public for everyone within moments
+— no redeploy involved.
 
 ## 5. Upload images
 
@@ -114,7 +119,8 @@ reference it from an entry in `thoughts.json` as `"/images/name.jpg"`.
 Type your password into the composer's password field, then press the
 small **delete** at the bottom of the entry and confirm. The backend
 verifies the password, removes the entry from `thoughts.json`, and
-deletes its image from the repository. Permanent after the redeploy.
+deletes its image from the repository. The change is public within
+moments.
 
 (Note: git history still remembers deleted content — that is the nature
 of an archive stored in git. To erase something from history entirely

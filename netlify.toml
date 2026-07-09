@@ -4,6 +4,11 @@
   # The site is fully static — nothing to build.
   publish = "."
   functions = "netlify/functions"
+  # Skip the build entirely when a commit only touches data
+  # (thoughts.json / images): the frontend reads those straight
+  # from GitHub, so redeploying for them would waste build credits.
+  # Exits 0 (skip) when nothing outside the data paths changed.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)thoughts.json' ':(exclude)images'"
 
 # thoughts.json must never be served stale: the feed should update
 # as soon as a new deploy goes live.
