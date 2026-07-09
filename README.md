@@ -98,9 +98,13 @@ after that the entry is permanent and public for everyone.
 ## 5. Upload images
 
 Images are uploaded through the same composer — click **Attach image**.
-Supported: JPEG, PNG, GIF, WebP, up to **4 MB** (a Netlify Functions
-request-size limit). The backend commits the file into `/images/` named
-after the entry's id, so images and entries can never get mixed up.
+Supported: JPEG, PNG, GIF, WebP — any size. Netlify Functions reject
+request bodies over ~6 MB (a platform limit), so images larger than
+~3.5 MB are automatically downscaled and re-encoded as JPEG in the
+browser before upload. The one exception is animated GIFs, which
+cannot be recompressed without freezing them and must stay under
+3.5 MB. The backend commits the file into `/images/` named after the
+entry's id, so images and entries can never get mixed up.
 
 You can also add images manually: commit a file into `images/` and
 reference it from an entry in `thoughts.json` as `"/images/name.jpg"`.

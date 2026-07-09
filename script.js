@@ -176,26 +176,99 @@
     setStatus("");
   }
 
-  // Read the chosen file as a base64 data URL. The backend strips
-  // the prefix and commits the raw bytes into /images/.
+  // Netlify Functions reject request bodies over ~6 MB, and base64
+  // inflates data by a third — so the payload must stay under about
+  // 3.5 MB of raw image. Rather than rejecting bigger files, large
+  // images are automatically downscaled in the browser to fit.
+  var MAX_IMAGE_BYTES = 3.5 * 1024 * 1024;
+
+  // Approximate decoded size of a data URL (base64 → bytes).
+  function dataUrlBytes(dataUrl) {
+    return Math.ceil((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
+  }
+
+  // Draw the image onto a canvas and re-encode as JPEG, shrinking
+  // quality and dimensions step by step until it fits.
+  function compressImage(file, callback) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+
+      var maxSide = 2600; // plenty for full-screen viewing
+      var quality = 0.85;
+      var result = null;
+
+      while (maxSide >= 800) {
+        var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        result = canvas.toDataURL("image/jpeg", quality);
+        if (dataUrlBytes(result) <= MAX_IMAGE_BYTES) break;
+
+        // Still too big: lower quality first, then dimensions.
+        if (quality > 0.6) {
+          quality -= 0.1;
+        } else {
+          maxSide -= 400;
+        }
+      }
+
+      callback(result && dataUrlBytes(result) <= MAX_IMAGE_BYTES ? result : null);
+    };
+
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      callback(null);
+    };
+
+    img.src = url;
+  }
+
+  function attachImage(name, dataUrl) {
+    attachedImage = { name: name, data: dataUrl };
+    imageLabelEl.textContent = name;
+    previewEl.src = dataUrl;
+    previewEl.hidden = false;
+  }
+
   imageEl.addEventListener("change", function () {
     var file = imageEl.files[0];
     if (!file) return;
 
-    if (file.size > 4 * 1024 * 1024) {
-      setStatus("Image is too large — 4 MB at most.", true);
+    // Small enough already — send the original file untouched.
+    if (file.size <= MAX_IMAGE_BYTES) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        attachImage(file.name, reader.result);
+        setStatus("");
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Re-encoding a GIF would freeze its animation, so those
+    // must simply be under the platform limit.
+    if (file.type === "image/gif") {
+      setStatus("Animated GIFs must be under 3.5 MB.", true);
       imageEl.value = "";
       return;
     }
 
-    var reader = new FileReader();
-    reader.onload = function () {
-      attachedImage = { name: file.name, data: reader.result };
-      imageLabelEl.textContent = file.name;
-      previewEl.src = reader.result;
-      previewEl.hidden = false;
-    };
-    reader.readAsDataURL(file);
+    setStatus("Large image — compressing…");
+    compressImage(file, function (dataUrl) {
+      if (!dataUrl) {
+        setStatus("This image could not be processed.", true);
+        imageEl.value = "";
+        return;
+      }
+      attachImage(file.name.replace(/\.\w+$/, "") + ".jpg", dataUrl);
+      setStatus("Compressed to fit. Ready to publish.");
+    });
   });
 
   clearBtn.addEventListener("click", clearComposer);
